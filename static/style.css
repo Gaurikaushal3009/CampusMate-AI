@@ -1203,3 +1203,104 @@ form button {
     font-size: 1.25rem;
   }
 }
+
+/* ========================================
+   CAMPUSMATE AI — HEADER & LOGOUT
+   ======================================== */
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+.header > div {
+    position: relative;
+    z-index: 1;
+}
+
+.header form {
+    display: block;
+    margin: 0;
+    padding: 0;
+    position: relative;
+    z-index: 2;
+}
+
+.header form button {
+    width: auto;
+    align-self: auto;
+    margin: 0;
+    padding: 11px 22px;
+    color: #ffffff;
+    font-weight: 700;
+    border: 1px solid rgba(251, 113, 133, 0.4);
+    border-radius: 11px;
+    background: linear-gradient(120deg, #e11d48, #be123c);
+    box-shadow: 0 5px 16px rgba(225, 29, 72, 0.2);
+}
+
+.header form button:hover {
+    background: linear-gradient(120deg, #f43f5e, #e11d48);
+    transform: translateY(-2px);
+}
+
+/* ========================================
+   AUTHENTICATED DASHBOARD
+   ======================================== */
+
+.welcome {
+    position: relative;
+    overflow: hidden;
+}
+
+.welcome h2 {
+    color: #ffffff;
+}
+
+.welcome p {
+    color: #cbd5e1;
+}
+
+/* ========================================
+   FORM IMPROVEMENTS
+   ======================================== */
+
+form button:active {
+    transform: scale(0.98);
+}
+
+input:disabled,
+button:disabled,
+select:disabled,
+textarea:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ========================================
+   RESPONSIVE HEADER
+   ======================================== */
+
+@media (max-width: 520px) {
+    .header {
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .header h1 {
+        font-size: 1.35rem;
+    }
+
+    .header p {
+        font-size: 0.8rem;
+    }
+
+    .header form button {
+        width: auto;
+        padding: 9px 13px;
+        font-size: 0.82rem;
+    }
+}

@@ -1,10 +1,26 @@
 
+import os
 import sqlite3
 from pathlib import Path
+from functools import wraps
 
-from flask import Flask, render_template, jsonify, request
+from flask import (
+    Flask, render_template, jsonify, request,
+    redirect, url_for, session
+)
+from werkzeug.security import generate_password_hash, check_password_hash
 
-app = Flask(__name__)
+
+app = Flask(__name__,
+            static_folder="static",
+            static_url_path="/static"
+            )
+
+app.secret_key = os.environ.get(
+    "SECRET_KEY",
+    "campusmate-local-development-secret-change-before-deployment"
+)
+
 DATABASE = Path(__file__).resolve().parent / "campusmate.db"
 
 
@@ -18,6 +34,18 @@ def get_db_connection():
 
 def initialize_database():
     with get_db_connection() as conn:
+
+        # User accounts
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                email TEXT NOT NULL UNIQUE,
+                password TEXT NOT NULL
+            )
+        """)
+
+        # Tasks
         conn.execute("""
             CREATE TABLE IF NOT EXISTS tasks (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -28,6 +56,7 @@ def initialize_database():
             )
         """)
 
+        # Study sessions
         conn.execute("""
             CREATE TABLE IF NOT EXISTS study_sessions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,29 +69,212 @@ def initialize_database():
             )
         """)
 
+        # Add user_id to existing tables without deleting old data
+        for table in ("tasks", "study_sessions"):
+            columns = [
+                row["name"]
+                for row in conn.execute(
+                    f"PRAGMA table_info({table})"
+                ).fetchall()
+            ]
+
+            if "user_id" not in columns:
+                conn.execute(
+                    f"ALTER TABLE {table} ADD COLUMN user_id INTEGER"
+                )
+
+        # Give existing records to the first registered user.
+        # This preserves data from your earlier single-user project.
+        first_user = conn.execute(
+            "SELECT id FROM users ORDER BY id LIMIT 1"
+        ).fetchone()
+
+        if first_user:
+            conn.execute(
+                "UPDATE tasks SET user_id = ? WHERE user_id IS NULL",
+                (first_user["id"],)
+            )
+            conn.execute(
+                "UPDATE study_sessions SET user_id = ? WHERE user_id IS NULL",
+                (first_user["id"],)
+            )
+
+
+# ---------------- LOGIN PROTECTION ----------------
+
+def login_required(function):
+    @wraps(function)
+    def wrapper(*args, **kwargs):
+        if "user_id" not in session:
+            if request.path.startswith("/api/"):
+                return jsonify({"error": "Please log in first."}), 401
+
+            return redirect(url_for("login"))
+
+        return function(*args, **kwargs)
+
+    return wrapper
+
 
 # ---------------- HOME PAGE ----------------
 
 @app.route("/")
 def home():
-    return render_template("index.html")
+    return render_template("landing.html")
+
+
+# ---------------- SIGNUP ----------------
+
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+
+    if session.get("user_id"):
+        return redirect(url_for("dashboard"))
+
+    error = None
+
+    if request.method == "POST":
+
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+        confirm_password = request.form.get("confirm_password", "")
+
+        if len(name) < 2 or len(name) > 80:
+            error = "Please enter a name between 2 and 80 characters."
+
+        elif len(email) > 254 or "@" not in email:
+            error = "Please enter a valid email address."
+
+        elif len(password) < 8:
+            error = "Password must contain at least 8 characters."
+
+        elif password != confirm_password:
+            error = "Passwords do not match."
+
+        else:
+            hashed_password = generate_password_hash(password)
+
+            try:
+                with get_db_connection() as conn:
+
+                    cursor = conn.execute("""
+                        INSERT INTO users (name, email, password)
+                        VALUES (?, ?, ?)
+                    """, (name, email, hashed_password))
+
+                    user_id = cursor.lastrowid
+
+                    # Assign older project records to the first account.
+                    user_count = conn.execute(
+                        "SELECT COUNT(*) FROM users"
+                    ).fetchone()[0]
+
+                    if user_count == 1:
+                        conn.execute(
+                            "UPDATE tasks SET user_id = ? WHERE user_id IS NULL",
+                            (user_id,)
+                        )
+                        conn.execute(
+                            "UPDATE study_sessions SET user_id = ? WHERE user_id IS NULL",
+                            (user_id,)
+                        )
+
+                session.clear()
+                session["user_id"] = user_id
+                session["user_name"] = name
+
+                return redirect(url_for("dashboard"))
+
+            except sqlite3.IntegrityError:
+                error = "An account with this email already exists."
+
+    return render_template(
+        "auth.html",
+        mode="signup",
+        error=error
+    )
+
+
+# ---------------- LOGIN ----------------
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+
+    if session.get("user_id"):
+        return redirect(url_for("dashboard"))
+
+    error = None
+
+    if request.method == "POST":
+
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+
+        with get_db_connection() as conn:
+            user = conn.execute("""
+                SELECT * FROM users WHERE email = ?
+            """, (email,)).fetchone()
+
+        if user and check_password_hash(user["password"], password):
+
+            session.clear()
+            session["user_id"] = user["id"]
+            session["user_name"] = user["name"]
+
+            return redirect(url_for("dashboard"))
+
+        error = "Incorrect email or password. Please try again."
+
+    return render_template(
+        "auth.html",
+        mode="login",
+        error=error
+    )
+
+
+# ---------------- DASHBOARD ----------------
+
+@app.route("/dashboard")
+@login_required
+def dashboard():
+    return render_template(
+        "index.html",
+        user_name=session.get("user_name", "Student")
+    )
+
+
+# ---------------- LOGOUT ----------------
+
+@app.route("/logout", methods=["POST"])
+@login_required
+def logout():
+    session.clear()
+    return redirect(url_for("home"))
 
 
 # ---------------- TASK MANAGER ----------------
 
 @app.route("/api/tasks", methods=["GET"])
+@login_required
 def get_tasks():
+
+    user_id = session["user_id"]
+
     with get_db_connection() as conn:
         tasks = conn.execute("""
             SELECT * FROM tasks
+            WHERE user_id = ?
             ORDER BY completed ASC, id DESC
-        """).fetchall()
+        """, (user_id,)).fetchall()
 
     return jsonify([dict(task) for task in tasks])
 
 
 @app.route("/api/tasks", methods=["POST"])
+@login_required
 def add_task():
+
     data = request.get_json(silent=True) or {}
 
     title = data.get("title", "").strip()
@@ -77,9 +289,9 @@ def add_task():
 
     with get_db_connection() as conn:
         cursor = conn.execute("""
-            INSERT INTO tasks (title, due_date, priority)
-            VALUES (?, ?, ?)
-        """, (title, due_date, priority))
+            INSERT INTO tasks (title, due_date, priority, user_id)
+            VALUES (?, ?, ?, ?)
+        """, (title, due_date, priority, session["user_id"]))
 
         task_id = cursor.lastrowid
 
@@ -90,7 +302,9 @@ def add_task():
 
 
 @app.route("/api/tasks/<int:task_id>", methods=["PATCH"])
+@login_required
 def update_task(task_id):
+
     data = request.get_json(silent=True) or {}
     completed = data.get("completed")
 
@@ -99,9 +313,10 @@ def update_task(task_id):
 
     with get_db_connection() as conn:
         cursor = conn.execute("""
-            UPDATE tasks SET completed = ?
-            WHERE id = ?
-        """, (int(completed), task_id))
+            UPDATE tasks
+            SET completed = ?
+            WHERE id = ? AND user_id = ?
+        """, (int(completed), task_id, session["user_id"]))
 
     if cursor.rowcount == 0:
         return jsonify({"error": "Task not found."}), 404
@@ -110,11 +325,14 @@ def update_task(task_id):
 
 
 @app.route("/api/tasks/<int:task_id>", methods=["DELETE"])
+@login_required
 def delete_task(task_id):
+
     with get_db_connection() as conn:
         cursor = conn.execute("""
-            DELETE FROM tasks WHERE id = ?
-        """, (task_id,))
+            DELETE FROM tasks
+            WHERE id = ? AND user_id = ?
+        """, (task_id, session["user_id"]))
 
     if cursor.rowcount == 0:
         return jsonify({"error": "Task not found."}), 404
@@ -125,18 +343,23 @@ def delete_task(task_id):
 # ---------------- DAILY STUDY PLANNER ----------------
 
 @app.route("/api/sessions", methods=["GET"])
+@login_required
 def get_sessions():
+
     with get_db_connection() as conn:
         sessions = conn.execute("""
             SELECT * FROM study_sessions
+            WHERE user_id = ?
             ORDER BY study_date ASC, start_time ASC, id ASC
-        """).fetchall()
+        """, (session["user_id"],)).fetchall()
 
-    return jsonify([dict(session) for session in sessions])
+    return jsonify([dict(item) for item in sessions])
 
 
 @app.route("/api/sessions", methods=["POST"])
+@login_required
 def add_session():
+
     data = request.get_json(silent=True) or {}
 
     subject = data.get("subject", "").strip()
@@ -162,9 +385,17 @@ def add_session():
     with get_db_connection() as conn:
         cursor = conn.execute("""
             INSERT INTO study_sessions
-                (subject, study_date, start_time, duration_minutes, notes)
-            VALUES (?, ?, ?, ?, ?)
-        """, (subject, study_date, start_time, duration, notes))
+                (subject, study_date, start_time,
+                 duration_minutes, notes, user_id)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            subject,
+            study_date,
+            start_time,
+            duration,
+            notes,
+            session["user_id"]
+        ))
 
         session_id = cursor.lastrowid
 
@@ -175,7 +406,9 @@ def add_session():
 
 
 @app.route("/api/sessions/<int:session_id>", methods=["PATCH"])
+@login_required
 def update_session(session_id):
+
     data = request.get_json(silent=True) or {}
     completed = data.get("completed")
 
@@ -184,9 +417,10 @@ def update_session(session_id):
 
     with get_db_connection() as conn:
         cursor = conn.execute("""
-            UPDATE study_sessions SET completed = ?
-            WHERE id = ?
-        """, (int(completed), session_id))
+            UPDATE study_sessions
+            SET completed = ?
+            WHERE id = ? AND user_id = ?
+        """, (int(completed), session_id, session["user_id"]))
 
     if cursor.rowcount == 0:
         return jsonify({"error": "Study session not found."}), 404
@@ -195,11 +429,14 @@ def update_session(session_id):
 
 
 @app.route("/api/sessions/<int:session_id>", methods=["DELETE"])
+@login_required
 def delete_session(session_id):
+
     with get_db_connection() as conn:
         cursor = conn.execute("""
-            DELETE FROM study_sessions WHERE id = ?
-        """, (session_id,))
+            DELETE FROM study_sessions
+            WHERE id = ? AND user_id = ?
+        """, (session_id, session["user_id"]))
 
     if cursor.rowcount == 0:
         return jsonify({"error": "Study session not found."}), 404
@@ -210,14 +447,14 @@ def delete_session(session_id):
 # ---------------- FREE STUDENT CHATBOT ----------------
 
 @app.route("/api/chat", methods=["POST"])
+@login_required
 def chat():
+
     data = request.get_json(silent=True) or {}
     message = data.get("message", "").strip()
 
     if not message:
-        return jsonify({
-            "error": "Please enter a message."
-        }), 400
+        return jsonify({"error": "Please enter a message."}), 400
 
     if len(message) > 4000:
         return jsonify({
@@ -226,7 +463,6 @@ def chat():
 
     text = message.lower()
 
-    # Greeting
     if any(word in text.split() for word in ["hello", "hi", "hey"]):
         reply = (
             "Hello! Welcome to CampusMate AI! 🎓\n\n"
@@ -236,7 +472,6 @@ def chat():
             "Try asking: Explain Python variables."
         )
 
-    # Python variables
     elif "variable" in text and "python" in text:
         reply = (
             "PYTHON VARIABLES\n\n"
@@ -249,7 +484,6 @@ def chat():
             "print(name)"
         )
 
-    # Python
     elif "python" in text:
         reply = (
             "PYTHON PROGRAMMING\n\n"
@@ -266,7 +500,6 @@ def chat():
             "Ask me about any of these topics."
         )
 
-    # HTML
     elif "html" in text:
         reply = (
             "HTML BASICS\n\n"
@@ -279,7 +512,6 @@ def chat():
             "links, images, tables, and forms."
         )
 
-    # CSS
     elif "css" in text:
         reply = (
             "CSS BASICS\n\n"
@@ -293,7 +525,6 @@ def chat():
             "animations, and responsive design."
         )
 
-    # JavaScript
     elif "javascript" in text or " js " in f" {text} ":
         reply = (
             "JAVASCRIPT BASICS\n\n"
@@ -307,7 +538,6 @@ def chat():
             "and dynamic webpage content."
         )
 
-    # SQL and databases
     elif any(word in text for word in ["database", "sqlite", "sql"]):
         reply = (
             "DATABASE BASICS\n\n"
@@ -323,7 +553,6 @@ def chat():
             "SELECT * FROM tasks;"
         )
 
-    # HTML, CSS, JavaScript comparison
     elif "difference" in text and any(
         word in text for word in ["html", "css", "javascript"]
     ):
@@ -337,7 +566,6 @@ def chat():
             "and JavaScript makes things work."
         )
 
-    # Exam preparation
     elif any(word in text for word in ["exam", "revision", "quiz"]):
         reply = (
             "EXAM PREPARATION PLAN\n\n"
@@ -350,7 +578,6 @@ def chat():
             "your notes."
         )
 
-    # Study planning
     elif any(word in text for word in ["study", "timetable", "schedule"]):
         reply = (
             "STUDY PLANNING\n\n"
@@ -363,7 +590,6 @@ def chat():
             "subjects, dates, and study sessions."
         )
 
-    # Motivation
     elif any(word in text for word in ["motivate", "motivation", "tired"]):
         reply = (
             "YOU CAN DO THIS! 🌟\n\n"
@@ -373,7 +599,6 @@ def chat():
             "for the perfect moment to begin."
         )
 
-    # Help
     elif "help" in text or "what can you do" in text:
         reply = (
             "CAMPUSMATE AI - HOW I CAN HELP\n\n"
@@ -386,7 +611,6 @@ def chat():
             "Try: Explain Python variables."
         )
 
-    # Default response
     else:
         reply = (
             "Thanks for your question!\n\n"
@@ -407,6 +631,7 @@ def chat():
 
 @app.route("/health")
 def health():
+
     with get_db_connection() as conn:
         conn.execute("SELECT 1")
 
@@ -419,6 +644,7 @@ def health():
 # ---------------- START APPLICATION ----------------
 
 if __name__ == "__main__":
+
     initialize_database()
 
     print("CampusMate AI is starting...")

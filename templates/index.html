@@ -1,5 +1,4 @@
-
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -15,6 +14,11 @@
             <h1>CampusMate AI</h1>
             <p>Your smart student life assistant</p>
         </div>
+
+        <!-- LOGOUT BUTTON -->
+        <form action="{{ url_for('logout') }}" method="POST">
+            <button type="submit">Logout</button>
+        </form>
     </header>
 
     <main class="container">
@@ -45,7 +49,7 @@
             </article>
         </section>
 
-        <!-- STUDY PROGRESS AND FOCUS TIMER: ONLY ONE COPY -->
+        <!-- STUDY PROGRESS AND FOCUS TIMER -->
         <section class="cm-extra-grid">
 
             <!-- STUDY PROGRESS -->
@@ -88,7 +92,7 @@
                 </button>
             </section>
 
-            <!-- STUDY TIMER: ONLY ONE COPY -->
+            <!-- STUDY TIMER -->
             <section class="cm-panel" id="cm-focus">
                 <div class="cm-heading">
                     <div>
@@ -133,7 +137,7 @@
             </section>
         </section>
 
-        <!-- KNOWLEDGE CHECK / QUIZ: ONLY ONE COPY -->
+        <!-- KNOWLEDGE CHECK / QUIZ -->
         <section class="cm-panel cm-quiz-panel" id="cm-quiz">
             <div class="cm-heading">
                 <div>
@@ -187,7 +191,7 @@
             </div>
         </section>
 
-        <!-- ADD STUDY TASK: ONLY ONE COPY -->
+        <!-- ADD STUDY TASK -->
         <section class="panel">
             <h2>Add a Study Task</h2>
 
@@ -213,14 +217,14 @@
             </form>
         </section>
 
-        <!-- TASK LIST: ONLY ONE COPY -->
+        <!-- TASK LIST -->
         <section class="panel">
             <h2>My Study Tasks</h2>
             <p id="taskCount">Loading tasks...</p>
             <div id="taskList"></div>
         </section>
 
-        <!-- DAILY STUDY PLANNER: ONLY ONE COPY -->
+        <!-- DAILY STUDY PLANNER -->
         <section class="panel" id="studyPlanner">
             <div class="cm-heading">
                 <div>
@@ -284,7 +288,7 @@
             <div id="sessionList">Loading study sessions...</div>
         </section>
 
-        <!-- STUDENT ASSISTANT: ONLY ONE COPY -->
+        <!-- STUDENT ASSISTANT -->
         <section class="panel" id="aiAssistant">
             <div class="cm-heading">
                 <div>
