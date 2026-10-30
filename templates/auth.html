@@ -1,0 +1,88 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CampusMate AI | Account</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='auth.css') }}">
+</head>
+<body class="auth-page">
+    <nav class="navbar auth-navbar">
+        <a class="brand" href="{{ url_for('home') }}">
+            <span class="brand-icon">C</span>
+            CampusMate <span class="brand-ai">AI</span>
+        </a>
+        <a class="back-link" href="{{ url_for('home') }}">← Back to home</a>
+    </nav>
+
+    <main class="auth-wrapper">
+        <section class="auth-card">
+            <div class="auth-logo">C</div>
+
+            {% if mode == "signup" %}
+                <span class="eyebrow">JOIN CAMPUSMATE AI</span>
+                <h1>Create your account</h1>
+                <p class="auth-description">Build better study habits and organize your student life.</p>
+            {% else %}
+                <span class="eyebrow">WELCOME BACK</span>
+                <h1>Log in to your account</h1>
+                <p class="auth-description">Continue where you left off.</p>
+            {% endif %}
+
+            {% if error %}
+                <div class="error-message">{{ error }}</div>
+            {% endif %}
+
+            <form method="POST"
+                  action="{{ url_for('signup') if mode == 'signup' else url_for('login') }}">
+
+                {% if mode == "signup" %}
+                    <label for="name">Full name</label>
+                    <input type="text" id="name" name="name"
+                           placeholder="Enter your full name"
+                           minlength="2" maxlength="80" required>
+                {% endif %}
+
+                <label for="email">Email address</label>
+                <input type="email" id="email" name="email"
+                       placeholder="you@example.com"
+                       maxlength="254" required>
+
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password"
+                       placeholder="{% if mode == 'signup' %}At least 8 characters{% else %}Enter your password{% endif %}"
+                       {% if mode == "signup" %}minlength="8"{% endif %}
+                       required>
+
+                {% if mode == "signup" %}
+                    <label for="confirm_password">Confirm password</label>
+                    <input type="password" id="confirm_password"
+                           name="confirm_password"
+                           placeholder="Enter your password again"
+                           minlength="8" required>
+                {% endif %}
+
+                <button class="primary-btn auth-submit" type="submit">
+                    {% if mode == "signup" %}Create my account →{% else %}Log in →{% endif %}
+                </button>
+            </form>
+
+            <div class="auth-switch">
+                {% if mode == "signup" %}
+                    Already have an account?
+                    <a href="{{ url_for('login') }}">Log in</a>
+                {% else %}
+                    Don't have an account?
+                    <a href="{{ url_for('signup') }}">Create one</a>
+                {% endif %}
+            </div>
+
+            <p class="auth-security">🔒 Your account password is securely hashed before storage.</p>
+        </section>
+    </main>
+</body>
+</html>

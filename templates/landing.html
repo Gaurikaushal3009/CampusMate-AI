@@ -1,0 +1,144 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusMate AI | Your Student Life Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='auth.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <a class="brand" href="{{ url_for('home') }}">
+            <span class="brand-icon">C</span>
+            CampusMate <span class="brand-ai">AI</span>
+        </a>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#about">About</a>
+            <a class="nav-login" href="{{ url_for('login') }}">Log in</a>
+            <a class="nav-signup" href="{{ url_for('signup') }}">Get started</a>
+        </div>
+    </nav>
+
+    <main>
+        <section class="hero">
+            <div class="hero-content">
+                <span class="eyebrow">YOUR SMARTER STUDENT LIFE STARTS HERE</span>
+                <h1>Study smarter.<br><span>Achieve more.</span></h1>
+                <p>
+                    One place to organize your studies, manage tasks,
+                    track your progress and make student life easier.
+                </p>
+                <div class="hero-actions">
+                    <a class="primary-btn" href="{{ url_for('signup') }}">
+                        Create free account →
+                    </a>
+                    <a class="secondary-btn" href="#features">Explore features</a>
+                </div>
+                <div class="hero-note">
+                    <span>✓</span> Personal study space
+                    <span>✓</span> Track your progress
+                </div>
+            </div>
+
+            <div class="hero-visual">
+                <div class="dashboard-preview">
+                    <div class="preview-top">
+                        <div>
+                            <small>YOUR STUDENT DASHBOARD</small>
+                            <h3>Welcome back, Student!</h3>
+                        </div>
+                        <span class="online-dot"></span>
+                    </div>
+                    <div class="preview-stats">
+                        <div class="preview-stat">
+                            <span>Study tasks</span>
+                            <strong>12</strong>
+                            <small>Stay organized</small>
+                        </div>
+                        <div class="preview-stat">
+                            <span>Focus time</span>
+                            <strong>4.5h</strong>
+                            <small>Keep improving</small>
+                        </div>
+                    </div>
+                    <div class="preview-task">
+                        <div class="preview-task-heading">
+                            <strong>Today's focus</strong>
+                            <span>Study plan</span>
+                        </div>
+                        <p>✓ Review programming concepts</p>
+                        <p>◷ Practise database queries</p>
+                        <p>○ Prepare for upcoming exams</p>
+                    </div>
+                    <div class="preview-footer">
+                        <span>✦</span> Small steps. Big achievements.
+                    </div>
+                </div>
+                <div class="floating-card">✦ Your learning companion</div>
+            </div>
+        </section>
+
+        <section class="features-section" id="features">
+            <div class="section-heading">
+                <span class="eyebrow">ALL IN ONE STUDENT PLATFORM</span>
+                <h2>Everything you need to move forward</h2>
+                <p>Bring your learning, planning and productivity together.</p>
+            </div>
+
+            <div class="feature-grid">
+                <article class="feature-card">
+                    <div class="feature-icon">✦</div>
+                    <h3>AI Study Assistant</h3>
+                    <p>Get help understanding concepts, preparing for exams and learning new topics.</p>
+                </article>
+                <article class="feature-card">
+                    <div class="feature-icon">▦</div>
+                    <h3>Smart Study Planner</h3>
+                    <p>Organize study sessions, tasks, deadlines and your daily schedule.</p>
+                </article>
+                <article class="feature-card">
+                    <div class="feature-icon">◷</div>
+                    <h3>Focus Timer</h3>
+                    <p>Use focused study sessions and breaks to build better study habits.</p>
+                </article>
+                <article class="feature-card">
+                    <div class="feature-icon">▤</div>
+                    <h3>Quizzes and Notes</h3>
+                    <p>Practise questions, review your results and organize learning material.</p>
+                </article>
+                <article class="feature-card">
+                    <div class="feature-icon">↗</div>
+                    <h3>Progress Analytics</h3>
+                    <p>Understand your study activity and monitor your progress over time.</p>
+                </article>
+                <article class="feature-card">
+                    <div class="feature-icon">◎</div>
+                    <h3>Student Life Tools</h3>
+                    <p>Bring useful academic and personal productivity tools into one space.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="about-section" id="about">
+            <span class="eyebrow">MADE FOR STUDENTS</span>
+            <h2>Your goals deserve a better system.</h2>
+            <p>
+                CampusMate AI brings your academic tasks and productivity
+                tools together, helping you spend less time organizing
+                and more time learning.
+            </p>
+            <a class="primary-btn" href="{{ url_for('signup') }}">Start your journey →</a>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <a class="brand" href="{{ url_for('home') }}">
+            <span class="brand-icon">C</span> CampusMate <span class="brand-ai">AI</span>
+        </a>
+        <p>Made to make student life simpler. © 2026 CampusMate AI</p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,324 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#11152b">
+    <title>CampusMate AI | Student Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <header class="header">
+        <div>
+            <h1>CampusMate AI</h1>
+            <p>Your smart student life assistant</p>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <!-- WELCOME -->
+        <section class="welcome">
+            <h2>Welcome to your student dashboard!</h2>
+            <p>Manage your studies, organize deadlines, and plan your day.</p>
+        </section>
+
+        <!-- TASK STATISTICS -->
+        <section class="stats-grid">
+            <article class="stat-card">
+                <h3>Total Tasks</h3>
+                <p id="totalTasks">0</p>
+            </article>
+            <article class="stat-card">
+                <h3>Pending Tasks</h3>
+                <p id="pendingTasks">0</p>
+            </article>
+            <article class="stat-card">
+                <h3>Completed Tasks</h3>
+                <p id="completedTasks">0</p>
+            </article>
+            <article class="stat-card">
+                <h3>High Priority</h3>
+                <p id="highPriorityTasks">0</p>
+            </article>
+        </section>
+
+        <!-- STUDY PROGRESS AND FOCUS TIMER: ONLY ONE COPY -->
+        <section class="cm-extra-grid">
+
+            <!-- STUDY PROGRESS -->
+            <section class="cm-panel" id="cm-progress">
+                <div class="cm-heading">
+                    <div>
+                        <span class="cm-eyebrow">YOUR LEARNING JOURNEY</span>
+                        <h2>Study Progress</h2>
+                        <p>Keep track of your practice.</p>
+                    </div>
+                    <span class="cm-icon">📊</span>
+                </div>
+
+                <div class="cm-stats">
+                    <div class="cm-stat">
+                        <span>Quizzes completed</span>
+                        <strong id="cm-total-quizzes">0</strong>
+                    </div>
+                    <div class="cm-stat">
+                        <span>Best score</span>
+                        <strong id="cm-best-score">0%</strong>
+                    </div>
+                    <div class="cm-stat">
+                        <span>Latest score</span>
+                        <strong id="cm-last-score">—</strong>
+                    </div>
+                </div>
+
+                <div class="cm-progress-track">
+                    <div id="cm-progress-fill" class="cm-progress-fill"></div>
+                </div>
+
+                <p id="cm-progress-message" class="cm-muted">
+                    Complete your first quiz to start tracking your progress.
+                </p>
+
+                <button type="button" class="cm-btn cm-btn-secondary"
+                        id="cm-reset-progress">
+                    Reset quiz progress
+                </button>
+            </section>
+
+            <!-- STUDY TIMER: ONLY ONE COPY -->
+            <section class="cm-panel" id="cm-focus">
+                <div class="cm-heading">
+                    <div>
+                        <span class="cm-eyebrow">FOCUS MODE</span>
+                        <h2>Study Timer</h2>
+                        <p>Focus on one task at a time.</p>
+                    </div>
+                    <span class="cm-icon">⏱️</span>
+                </div>
+
+                <div class="cm-timer-mode">
+                    <button type="button" class="cm-btn cm-mode active"
+                            data-minutes="25" data-mode="focus">
+                        Focus · 25 min
+                    </button>
+                    <button type="button" class="cm-btn cm-mode"
+                            data-minutes="5" data-mode="break">
+                        Break · 5 min
+                    </button>
+                </div>
+
+                <div class="cm-timer-circle">
+                    <div id="cm-timer-display">25:00</div>
+                    <span id="cm-timer-label">Ready to focus</span>
+                </div>
+
+                <div class="cm-timer-actions">
+                    <button type="button" class="cm-btn cm-btn-primary"
+                            id="cm-timer-start">Start</button>
+                    <button type="button" class="cm-btn cm-btn-secondary"
+                            id="cm-timer-reset">Reset</button>
+                </div>
+
+                <p class="cm-muted">
+                    Focus sessions completed:
+                    <strong id="cm-focus-count">0</strong>
+                </p>
+
+                <p id="cm-timer-message" class="cm-muted" aria-live="polite">
+                    Choose Focus or Break to begin.
+                </p>
+            </section>
+        </section>
+
+        <!-- KNOWLEDGE CHECK / QUIZ: ONLY ONE COPY -->
+        <section class="cm-panel cm-quiz-panel" id="cm-quiz">
+            <div class="cm-heading">
+                <div>
+                    <span class="cm-eyebrow">LEARN BY PRACTISING</span>
+                    <h2>Knowledge Check</h2>
+                    <p>Test your knowledge with multiple-choice questions.</p>
+                </div>
+                <span class="cm-icon">🧠</span>
+            </div>
+
+            <div class="cm-quiz-controls">
+                <label for="cm-quiz-topic">Choose a subject</label>
+                <select id="cm-quiz-topic">
+                    <option value="Python">Python</option>
+                    <option value="HTML">HTML</option>
+                    <option value="CSS">CSS</option>
+                    <option value="JavaScript">JavaScript</option>
+                    <option value="SQL">SQL</option>
+                </select>
+                <button type="button" class="cm-btn cm-btn-primary"
+                        id="cm-quiz-start">Start Quiz</button>
+            </div>
+
+            <div id="cm-quiz-area" hidden>
+                <div class="cm-quiz-topline">
+                    <span id="cm-question-count">Question 1 of 5</span>
+                    <span id="cm-quiz-score">Score: 0</span>
+                </div>
+
+                <div class="cm-quiz-track">
+                    <div id="cm-quiz-fill"></div>
+                </div>
+
+                <h3 id="cm-question-text"></h3>
+                <div id="cm-answer-options" class="cm-answer-options"></div>
+                <p id="cm-answer-feedback" aria-live="polite"></p>
+
+                <button type="button" class="cm-btn cm-btn-primary"
+                        id="cm-quiz-next" disabled>
+                    Next Question
+                </button>
+            </div>
+
+            <div id="cm-quiz-result" hidden>
+                <div class="cm-result-icon">🎉</div>
+                <h3 id="cm-result-title">Quiz completed!</h3>
+                <p id="cm-result-score"></p>
+                <p id="cm-result-message"></p>
+                <button type="button" class="cm-btn cm-btn-primary"
+                        id="cm-quiz-again">Try Another Quiz</button>
+            </div>
+        </section>
+
+        <!-- ADD STUDY TASK: ONLY ONE COPY -->
+        <section class="panel">
+            <h2>Add a Study Task</h2>
+
+            <form id="taskForm">
+                <label for="title">Task Name</label>
+                <input type="text" id="title" name="title"
+                       placeholder="e.g. Complete Python assignment" required>
+
+                <label for="dueDate">Due Date</label>
+                <input type="date" id="dueDate" name="due_date">
+
+                <label for="priority">Priority</label>
+                <select id="priority" name="priority">
+                    <option value="Low">Low</option>
+                    <option value="Medium" selected>Medium</option>
+                    <option value="High">High</option>
+                </select>
+
+                <button type="submit">Add Task</button>
+                <p id="taskStatus" role="status">
+                    Ready to manage your tasks.
+                </p>
+            </form>
+        </section>
+
+        <!-- TASK LIST: ONLY ONE COPY -->
+        <section class="panel">
+            <h2>My Study Tasks</h2>
+            <p id="taskCount">Loading tasks...</p>
+            <div id="taskList"></div>
+        </section>
+
+        <!-- DAILY STUDY PLANNER: ONLY ONE COPY -->
+        <section class="panel" id="studyPlanner">
+            <div class="cm-heading">
+                <div>
+                    <span class="cm-eyebrow">PLAN YOUR LEARNING</span>
+                    <h2>Daily Study Planner</h2>
+                    <p>Organize your subjects and build a consistent routine.</p>
+                </div>
+                <span class="cm-icon">📅</span>
+            </div>
+
+            <section class="stats-grid planner-stats">
+                <article class="stat-card">
+                    <h3>Total Sessions</h3>
+                    <p id="sessionTotal">0</p>
+                </article>
+                <article class="stat-card">
+                    <h3>Completed Sessions</h3>
+                    <p id="sessionCompleted">0</p>
+                </article>
+                <article class="stat-card">
+                    <h3>Planned Study Minutes</h3>
+                    <p id="studyMinutes">0</p>
+                </article>
+            </section>
+
+            <h3>Add a Study Session</h3>
+
+            <form id="sessionForm">
+                <label for="subject">Subject</label>
+                <input id="subject" name="subject" type="text"
+                       placeholder="e.g. Python Programming" required>
+
+                <label for="studyDate">Study Date</label>
+                <input id="studyDate" name="study_date" type="date" required>
+
+                <label for="startTime">Start Time</label>
+                <input id="startTime" name="start_time" type="time" required>
+
+                <label for="duration">Duration (minutes)</label>
+                <input id="duration" name="duration_minutes" type="number"
+                       min="5" max="720" value="60" required>
+
+                <label for="notes">Notes (optional)</label>
+                <textarea id="notes" name="notes"
+                          placeholder="Topics to revise or goals for this session"></textarea>
+
+                <button type="submit">Add Study Session</button>
+                <p id="plannerStatus" role="status"></p>
+            </form>
+
+            <div class="section-heading">
+                <h3>Your Study Schedule</h3>
+                <label for="sessionFilter">Filter</label>
+                <select id="sessionFilter">
+                    <option value="all">All Sessions</option>
+                    <option value="pending">Pending</option>
+                    <option value="completed">Completed</option>
+                </select>
+            </div>
+
+            <div id="sessionList">Loading study sessions...</div>
+        </section>
+
+        <!-- STUDENT ASSISTANT: ONLY ONE COPY -->
+        <section class="panel" id="aiAssistant">
+            <div class="cm-heading">
+                <div>
+                    <span class="cm-eyebrow">YOUR STUDY COMPANION</span>
+                    <h2>AI Student Assistant</h2>
+                    <p>Ask questions about programming, revision, or time management.</p>
+                </div>
+                <span class="cm-icon">🤖</span>
+            </div>
+
+            <div id="chatMessages" class="chat-messages"
+                 aria-live="polite" aria-relevant="additions">
+                <div class="chat-bubble assistant">
+                    Hi! I'm CampusMate AI. What would you like help with today?
+                </div>
+            </div>
+
+            <form id="chatForm">
+                <label for="chatInput">Your message</label>
+                <textarea id="chatInput" name="message" maxlength="4000"
+                          placeholder="Ask me a study or programming question..."
+                          required></textarea>
+
+                <button type="submit" id="chatSend">Send Message</button>
+                <p id="chatStatus" role="status"></p>
+            </form>
+        </section>
+
+    </main>
+
+    <footer class="footer">
+        <p>CampusMate AI — Plan smarter. Study better.</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
